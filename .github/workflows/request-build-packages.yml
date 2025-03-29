@@ -1,0 +1,69 @@
+# Requests Tigerbrew packages to be built.
+
+name: Build Tigerbrew Packages - leopard-g4e
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  request-ci-run:
+    if: github.event.issue.pull_request && contains(github.event.comment.body, 'build-leopard-g4e')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check User Permissions
+        id: check_perms
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const allowedAssociations = ['COLLABORATOR', 'MEMBER', 'OWNER'];
+            const authorAssociation = context.payload.comment.author_association;
+            if (!allowedAssociations.includes(authorAssociation)) {
+              core.setFailed(`User @${context.payload.comment.user.login} with association ${authorAssociation} is not authorized to trigger CI. Requires COLLABORATOR, MEMBER, or OWNER.`);
+            } else {
+              console.log(`User @${context.payload.comment.user.login} is authorized (${authorAssociation}).`);
+              const prNumber = context.issue.number;
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+              });
+              core.setOutput('pr_number', prNumber);
+              core.setOutput('head_sha', pr.head.sha);
+              core.setOutput('head_ref', pr.head.ref);
+              core.setOutput('repo_full_name', pr.head.repo.full_name);
+              core.setOutput('commenter', context.payload.comment.user.login);
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger Workflow in tigerbrew-ci
+        if: steps.check_perms.outputs.head_sha
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.CI_TRIGGER_TOKEN }}
+          repository: aarossig/tigerbrew-ci
+          event-type: build-leopard-g4e
+          client-payload: >
+            {
+              "pr_number": "${{ steps.check_perms.outputs.pr_number }}",
+              "head_sha": "${{ steps.check_perms.outputs.head_sha }}",
+              "head_ref": "${{ steps.check_perms.outputs.head_ref }}",
+              "source_repo_full_name": "${{ steps.check_perms.outputs.repo_full_name }}",
+              "triggering_repo": "${{ github.repository }}",
+              "triggering_actor": "${{ steps.check_perms.outputs.commenter }}"
+            }
+
+      - name: Add Reaction to Comment
+        if: steps.check_perms.outputs.head_sha
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `Triggered build-leopard-g4e in tigerbrew-ci for PR #${context.issue.number}.`
+            });
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
