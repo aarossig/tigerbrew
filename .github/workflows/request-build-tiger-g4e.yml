@@ -1,0 +1,13 @@
+name: Build Tigerbrew packages for tiger-g4e
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  trigger_tiger_g4e:
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '/build-tiger-g4e')
+    uses: ./.github/workflows/request-build.yml
+    secrets: inherit
+    with:
+      platform_name: tiger-g4e

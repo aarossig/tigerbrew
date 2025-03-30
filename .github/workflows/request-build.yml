@@ -1,0 +1,68 @@
+name: Build Tigerbrew packages
+
+on:
+  workflow_call:
+    inputs:
+      platform_name:
+        description: The platform to build for (leopard-g4e, tiger-g4e, etc)
+        required: true
+        type: string
+    secrets:
+      CI_TRIGGER_TOKEN:
+        description: The token to access the tigerbrew-ci project
+        required: true
+
+jobs:
+  check_ci_permissions:
+    uses: ./.github/workflows/check-ci-permissions.yml
+
+  trigger_build:
+    runs-on: ubuntu-latest
+    needs: check_ci_permissions
+    steps:
+      - name: Trigger ${{ inputs.platform_name }} in tigerbrew-ci
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.CI_TRIGGER_TOKEN }}
+          repository: aarossig/tigerbrew-ci
+          event-type: build-packages
+          client-payload: >
+            {
+              "pr_number": "${{ needs.check_ci_permissions.outputs.pr_number }}",
+              "head_sha": "${{ needs.check_ci_permissions.outputs.head_sha }}",
+              "head_ref": "${{ needs.check_ci_permissions.outputs.head_ref }}",
+              "source_repo_full_name": "${{ needs.check_ci_permissions.outputs.repo_full_name }}",
+              "triggering_repo": "${{ github.repository }}",
+              "triggering_actor": "${{ needs.check_ci_permissions.outputs.commenter }}",
+              "platform_name": "${{ inputs.platform_name }}"
+            }
+
+      - name: Report status (success)
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: `${{ needs.check_ci_permissions.outputs.head_sha }}`,
+              state: 'pending',
+              context: `tigerbrew-ci ${{ inputs.platform_name }}`
+            });
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Report status (failure)
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: `${{ needs.check_ci_permissions.outputs.head_sha }}`,
+              state: 'failure',
+              context: `tigerbrew-ci ${{ inputs.platform_name }}`
+            });
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
