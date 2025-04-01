@@ -31,8 +31,7 @@ jobs:
               "pr_number": "${{ needs.check_ci_permissions.outputs.pr_number }}",
               "head_sha": "${{ needs.check_ci_permissions.outputs.head_sha }}",
               "head_ref": "${{ needs.check_ci_permissions.outputs.head_ref }}",
-              "source_repo_full_name": "${{ needs.check_ci_permissions.outputs.repo_full_name }}",
-              "triggering_repo": "${{ github.repository }}",
+              "repo_full_name": "${{ needs.check_ci_permissions.outputs.repo_full_name }}",
               "triggering_actor": "${{ needs.check_ci_permissions.outputs.commenter }}",
               "platform_name": "${{ inputs.platform_name }}"
             }
