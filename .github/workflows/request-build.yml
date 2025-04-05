@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       platform_name:
-        description: The platform to build for (leopard-g4e, tiger-g4e, etc)
+        description: The platform to build for (leopard_g4e, tiger_g4e, etc)
         required: true
         type: string
     secrets:
@@ -25,7 +25,7 @@ jobs:
         with:
           token: ${{ secrets.CI_TRIGGER_TOKEN }}
           repository: aarossig/tigerbrew-ci
-          event-type: build-packages
+          event-type: build-packages-${{ inputs.platform_name }}
           client-payload: >
             {
               "pr_number": "${{ needs.check_ci_permissions.outputs.pr_number }}",

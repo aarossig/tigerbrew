@@ -1,4 +1,4 @@
-name: Build Tigerbrew packages for leopard-g4e
+name: Build Tigerbrew packages for leopard_g4e
 
 on:
   issue_comment:
@@ -6,8 +6,8 @@ on:
 
 jobs:
   trigger_leopard_g4e:
-    if: github.event.issue.pull_request && contains(github.event.comment.body, '/build-leopard-g4e')
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '/build-leopard_g4e')
     uses: ./.github/workflows/request-build.yml
     secrets: inherit
     with:
-      platform_name: leopard-g4e
+      platform_name: leopard_g4e
